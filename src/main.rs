@@ -1,9 +1,10 @@
 mod ipc_server;
+mod middleware;
 mod routes;
 
 use axum::{routing::get, Router};
 use ipc_server::IpcServer;
-use routes::bot;
+use routes::{auth, bot};
 use std::{net::SocketAddr, time::Duration};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -36,18 +37,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    let auth_state = auth::AuthState {
+        http_client: reqwest::Client::new(),
+        jwt_secret: std::env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment"),
+        discord_client_id: std::env::var("DISCORD_CLIENT_ID")
+            .expect("DISCORD_CLIENT_ID must be set in environment"),
+        discord_client_secret: std::env::var("DISCORD_CLIENT_SECRET")
+            .expect("DISCORD_CLIENT_SECRET must be set in environment"),
+        discord_redirect_uri: std::env::var("DISCORD_REDIRECT_URI")
+            .expect("DISCORD_REDIRECT_URI must be set in environment"),
+        frontend_url: std::env::var("FRONTEND_URL")
+            .unwrap_or_else(|_| "http://localhost:3000".to_string()),
+    };
+
+    let auth_routes = auth::create_auth_router().with_state(auth_state);
+
     let api_routes = Router::new()
         .route("/stats", get(bot::get_bot_stats))
         .with_state(connected_clients);
 
-    let app = Router::new().nest("/api", api_routes).layer(cors);
+    let app = Router::new()
+        .nest("/api", api_routes)
+        .nest("/api/auth", auth_routes)
+        .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], serverport));
-    println!(
-        "REST API Server listening on http://localhost:{}",
-        &serverport
-    );
-    println!("IPC WebSocket Server listening on ws://localhost:3001/ws/");
+
     println!("Press Ctrl+C to stop.");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
