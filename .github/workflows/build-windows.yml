@@ -38,13 +38,11 @@ jobs:
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
     
     - name: Build Windows Release
-      run: |
-        cd backend
-        cargo build --release --target x86_64-pc-windows-msvc
+      run: cargo build --release --target x86_64-pc-windows-msvc
     
     - name: Upload Windows Executable
       uses: actions/upload-artifact@v4
       with:
         name: backend-windows-x64
-        path: backend/target/x86_64-pc-windows-msvc/release/backend.exe
+        path: target/x86_64-pc-windows-msvc/release/backend.exe
         retention-days: 30
