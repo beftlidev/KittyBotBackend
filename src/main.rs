@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 
-    println!("Starting REST API Server...");
+    println!("Starting REST API Server on port {}...", serverport);
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -63,9 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], serverport));
 
-    println!("Press Ctrl+C to stop.");
-
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    println!("REST API Server is running on http://localhost:{}", serverport);
+    println!("Press Ctrl+C to stop.");
     axum::serve(listener, app).await?;
 
     Ok(())
