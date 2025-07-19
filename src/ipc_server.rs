@@ -47,7 +47,8 @@ impl IpcServer {
 
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-        println!("IPC Server listening on {}", addr);
+        // ipc console log
+        println!("IPC Server listening on now {}", addr);
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
         axum::serve(listener, app).await?;
